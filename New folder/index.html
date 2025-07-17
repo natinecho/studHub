@@ -1,0 +1,361 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Tester</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      input,
+      button,
+      select {
+        margin: 5px;
+        padding: 8px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+      }
+      .log {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 200px;
+        overflow-y: scroll;
+        margin-top: 10px;
+        background: #f9f9f9;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Socket Chat Tester</h2>
+
+    <label>User ID:</label><input type="text" id="userId" value="" /><br />
+    <label>Token:</label><input type="text" id="token" value="" /><br />
+    <button onclick="connectSocket()">Connect</button>
+
+    <hr />
+
+    <h3>1-on-1 Message</h3>
+    <input type="text" id="receiverId" placeholder="Receiver ID" />
+    <input type="text" id="dmContent" placeholder="Message" />
+    <button onclick="sendDM()">Send DM</button>
+
+    <h3>Group Message</h3>
+    <input type="text" id="groupId" placeholder="Group ID" />
+    <input type="text" id="groupContent" placeholder="Group Message" />
+    <button onclick="sendGroup()">Send Group Message</button>
+
+    <h3>Get Pending Messages</h3>
+    <button onclick="getPending()">Fetch Pending</button>
+
+    <h3>Load Conversation Messages (API)</h3>
+    <input type="text" id="conversationId" placeholder="Conversation ID" />
+    <button onclick="loadConversation()">Load</button>
+
+    <h3>Chat Log</h3>
+    <div class="log" id="chatLog"></div>
+
+    <script>
+      let socket;
+
+      function log(msg) {
+        const logBox = document.getElementById("chatLog");
+        logBox.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      function connectSocket() {
+        const userId = document.getElementById("userId").value;
+        if (!userId) return alert("User ID required");
+
+        socket = io("http://localhost:5000", {
+          query: { userId },
+        });
+
+        socket.on("connect", () => log("Connected to socket"));
+        socket.on("receive_dm", (msg) =>
+          log(`<b>DM:</b> ${JSON.stringify(msg)}`)
+        );
+        socket.on("receive_group", (msg) =>
+          log(`<b>Group:</b> ${JSON.stringify(msg)}`)
+        );
+        socket.on("pending_messages", (msgs) =>
+          log(`<b>Pending:</b> ${JSON.stringify(msgs)}`)
+        );
+        socket.on("disconnect", () => log("Disconnected from socket"));
+      }
+
+      function sendDM() {
+        const receiverId = document.getElementById("receiverId").value;
+        const content = document.getElementById("dmContent").value;
+        socket.emit("send_dm", { receiverId, content });
+        log(`Sent DM to ${receiverId}: "${content}"`);
+      }
+
+      function sendGroup() {
+        const groupId = document.getElementById("groupId").value;
+        const content = document.getElementById("groupContent").value;
+        socket.emit("send_group", { groupId, content });
+        log(`Sent Group Message to ${groupId}: "${content}"`);
+      }
+
+      function getPending() {
+        socket.emit("get_pending");
+        log("Requested pending messages");
+      }
+
+      function loadConversation() {
+        const conversationId = document.getElementById("conversationId").value;
+        const token = document.getElementById("token").value;
+
+        fetch(
+          `http://localhost:5000/api/message/conversation/${conversationId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => log(`<b>Messages:</b> ${JSON.stringify(data)}`))
+          .catch((err) => log(`Error: ${err.message}`));
+      }
+    </script>
+  </body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Tester</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f2f2f2;
+      }
+
+      h2,
+      h3 {
+        color: #333;
+      }
+
+      input,
+      button,
+      select {
+        margin: 5px 0;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        width: 100%;
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      label {
+        font-weight: bold;
+        display: block;
+        margin-top: 10px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .section {
+        margin-bottom: 25px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 20px;
+      }
+
+      .log {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 250px;
+        overflow-y: auto;
+        background: #fafafa;
+        border-radius: 5px;
+      }
+
+      .log div {
+        padding: 6px 10px;
+        margin-bottom: 5px;
+        background: #ffffff;
+        border-left: 4px solid #007bff;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        font-size: 14px;
+      }
+
+      .log b {
+        color: #007bff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>💬 Chat Tester</h2>
+
+      <div class="section">
+        <label>User ID:</label>
+        <input type="text" id="userId" placeholder="Your User ID" />
+        <label>Token:</label>
+        <input
+          type="text"
+          id="token"
+          placeholder="Bearer Token (for fetching messages)"
+        />
+        <button onclick="connectSocket()">🔌 Connect</button>
+      </div>
+
+      <div class="section">
+        <h3>📨 1-on-1 Message</h3>
+        <input type="text" id="receiverId" placeholder="Receiver ID" />
+        <input type="text" id="dmContent" placeholder="Message content" />
+        <button onclick="sendDM()">Send DM</button>
+      </div>
+
+      <div class="section">
+        <h3>👥 Group Message</h3>
+        <input type="text" id="groupId" placeholder="Group ID" />
+        <input
+          type="text"
+          id="groupContent"
+          placeholder="Group Message content"
+        />
+        <button onclick="sendGroup()">Send Group Message</button>
+      </div>
+
+      <div class="section">
+        <h3>📬 Pending Messages</h3>
+        <button onclick="getPending()">Get Pending Messages</button>
+      </div>
+
+      <div class="section">
+        <h3>📚 Load Conversation Messages (API)</h3>
+        <input type="text" id="conversationId" placeholder="Conversation ID" />
+        <button onclick="loadConversation()">Load Conversation Messages</button>
+      </div>
+
+      <div class="section">
+        <h3>✅ Mark Messages as Seen</h3>
+        <input
+          type="text"
+          id="seenMessageIds"
+          placeholder="Comma-separated Message IDs"
+        />
+        <button onclick="markSeen()">Mark as Seen</button>
+      </div>
+
+      <div class="section">
+        <h3>📝 Chat Log</h3>
+        <div class="log" id="chatLog"></div>
+      </div>
+    </div>
+
+    <script>
+      let socket;
+
+      function log(msg) {
+        const logBox = document.getElementById("chatLog");
+        logBox.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      function connectSocket() {
+        const userId = document.getElementById("userId").value;
+        if (!userId) return alert("User ID required");
+
+        socket = io("http://localhost:5000", {
+          query: { userId },
+        });
+
+        socket.on("connect", () => log("✅ Connected to socket"));
+        socket.on("receive_dm", (msg) =>
+          log(`<b>DM:</b> ${JSON.stringify(msg)}`)
+        );
+        socket.on("receive_group", (msg) =>
+          log(`<b>Group:</b> ${JSON.stringify(msg)}`)
+        );
+        socket.on("pending_messages", (msgs) =>
+          log(`<b>Pending:</b> ${JSON.stringify(msgs)}`)
+        );
+        socket.on("disconnect", () => log("❌ Disconnected from socket"));
+      }
+
+      function sendDM() {
+        const receiverId = document.getElementById("receiverId").value;
+        const content = document.getElementById("dmContent").value;
+        if (!receiverId || !content)
+          return alert("Receiver and message required");
+        socket.emit("send_dm", { receiverId, content });
+        log(`📤 Sent DM to ${receiverId}: "${content}"`);
+      }
+
+      function sendGroup() {
+        const groupId = document.getElementById("groupId").value;
+        const content = document.getElementById("groupContent").value;
+        if (!groupId || !content) return alert("Group ID and message required");
+        socket.emit("send_group", { groupId, content });
+        log(`📤 Sent Group Message to ${groupId}: "${content}"`);
+      }
+
+      function getPending() {
+        socket.emit("get_pending");
+        log("📥 Requested pending messages");
+      }
+
+      function loadConversation() {
+        const conversationId = document.getElementById("conversationId").value;
+        const token = document.getElementById("token").value;
+        if (!conversationId || !token)
+          return alert("Conversation ID and token required");
+
+        fetch(`http://localhost:5000/api/chat/conversation/${conversationId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => log(`<b>Messages:</b> ${JSON.stringify(data)}`))
+          .catch((err) => log(`❌ Error: ${err.message}`));
+      }
+
+      function markSeen() {
+        const userId = document.getElementById("userId").value;
+        const raw = document.getElementById("seenMessageIds").value;
+        if (!raw || !userId) return alert("User ID and message IDs required");
+        const messageIds = raw.split(",").map((id) => id.trim());
+
+        socket.emit("mark_seen", { messageIds, userId });
+        log(`👁️ Marked messages as seen: ${messageIds.join(", ")}`);
+      }
+    </script>
+  </body>
+</html>
