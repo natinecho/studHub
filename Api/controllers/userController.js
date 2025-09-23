@@ -8,7 +8,6 @@ const generateToken = (id) => {
 };
 
 // POST /api/users/register
-
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
   const userExist = await User.findOne({ email });
@@ -61,6 +60,45 @@ export const getUserProfile = async (req, res) => {
   });
 };
 
+
+
+export const updateProfile = async (req,res) => {
+
+  try{
+
+    const { username, bio, profile_pic, whoCanAddMeToGroup} = req.body; 
+    
+    // username has to be unique
+    if(username){
+      const existingUser = await User.findOne({username})
+      
+      if(existingUser && existingUser._id.toString() !== req.user._id.toString()){
+        return res.status(400).json({message:"Username is already taken"})
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id,{
+      ...(username && {username}),
+      ...(bio && {bio}),
+      ...(profile_pic && {profile_pic}),
+      ...(whoCanAddMeToGroup != undefined && {profile_pic}),
+    },
+    { new: true, runValidators: true }
+    ).select("-password");
+    
+    if (!updatedUser) return res.status(404).json({ message: "user not found" });
+
+    return res.status(200).json({message: "Profile updated successfully",
+      user: updatedUser})
+
+  }catch (error){
+      res.status(500).json({ message: "Failed to update profile", error: error.message });
+  }
+}
+
+export const forgotPassword = async (req,res) => {
+   
+}
 export const favoritePosts = async (req,res) => {
   try {
   
