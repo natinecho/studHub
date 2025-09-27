@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-import Post from "../models/forumModels/postModel.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -27,7 +26,6 @@ export const registerUser = async (req, res) => {
     token: generateToken(user._id),
   });
 };
-
 // POST /api/users/login
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -47,20 +45,14 @@ export const loginUser = async (req, res) => {
     token: generateToken(user._id),
   });
 };
-
-//  GET /api/users/:id
+//  GET /api/users/me
 export const getUserProfile = async (req, res) => {
-  const user = await User.findById(req.params.id).select("-password");
+
+  const user = await User.findById(req.user._id).select("-password");
   if (!user) return res.status(404).send({ message: "User not found" });
 
-  res.status(200).json({
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-  });
+  res.status(200).json(user);
 };
-
-
 
 export const updateProfile = async (req,res) => {
 
@@ -81,7 +73,7 @@ export const updateProfile = async (req,res) => {
       ...(username && {username}),
       ...(bio && {bio}),
       ...(profile_pic && {profile_pic}),
-      ...(whoCanAddMeToGroup != undefined && {profile_pic}),
+      ...(whoCanAddMeToGroup != undefined && {whoCanAddMeToGroup}),
     },
     { new: true, runValidators: true }
     ).select("-password");
@@ -96,9 +88,7 @@ export const updateProfile = async (req,res) => {
   }
 }
 
-export const forgotPassword = async (req,res) => {
-   
-}
+//favorite posts
 export const favoritePosts = async (req,res) => {
   try {
   

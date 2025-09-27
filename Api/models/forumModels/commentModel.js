@@ -4,14 +4,16 @@ const commentSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     post: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: true },
+    parentComment: { type: mongoose.Schema.Types.ObjectId, ref: "Comment", default: null },
     content: { type: String, required: true },
     votes: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        value: { type: Number, enum: [-1, 0, 1] }, // -1 = downvote, 1 = upvote, 0 = neutral
+        value: { type: Number, enum: [-1,1] }, // -1 = downvote, 1 = upvote
       },
     ],
-    score: { type: Number, default: 0 }, // stores total score
+    upvotes: { type: Number, default: 0 },
+    downvotes: { type: Number, default: 0 } 
   },
   { timestamps: true }
 );

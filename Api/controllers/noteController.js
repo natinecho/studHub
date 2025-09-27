@@ -1,7 +1,7 @@
 import Note from "../models/noteModel.js";
 import Group from "../models/groupModel.js";
 import { v4 as uuidv4 } from "uuid";
-import puppeteer from 'puppeteer';
+import { generateNotePDF } from "../services/pdfService.js";
 
 
 export const createNote = async (req, res) => {
@@ -11,7 +11,9 @@ export const createNote = async (req, res) => {
     if (type === "group") {
       const group = await Group.findById(groupId);
       if (!group || !group.members.includes(req.user._id)) {
-        return res.status(403).json({ message: "You are not a member of this group" });
+        return res
+          .status(403)
+          .json({ message: "You are not a member of this group" });
       }
     }
 
@@ -26,7 +28,9 @@ export const createNote = async (req, res) => {
 
     res.status(201).json({ message: "Note created successfully", note });
   } catch (error) {
-    res.status(400).json({ message: "Failed to create note", error: error.message });
+    res
+      .status(400)
+      .json({ message: "Failed to create note", error: error.message });
   }
 };
 
@@ -49,19 +53,19 @@ export const getNotes = async (req, res) => {
         {
           $or: [
             { title: { $regex: search, $options: "i" } },
-            { content: { $ : search, $options: "i" } },
+            { content: { $: search, $options: "i" } },
           ],
         },
       ];
     }
 
-    // Filter 
+    // Filter
     if (type) {
       query.type = type; // "personal" or "group"
     }
 
     if (tags) {
-      const tagsArray = tags.split(",").map(tag => tag.trim());
+      const tagsArray = tags.split(",").map((tag) => tag.trim());
       query.tags = { $in: tagsArray };
     }
 
@@ -78,22 +82,26 @@ export const getNotes = async (req, res) => {
     //Fetch notes
     const notes = await Note.find(query)
       .sort({ updatedAt: -1 })
-      .select("title owner contributors tags updatedAt content") // select fields
+      .select("title owner collaborators tags updatedAt content type") // select fields
       .lean(); // converts Mongoose documents to plain JS objects
 
     // Add snippet (first 200 chars of content)
-    const notesWithSnippet = notes.map(note => ({
+    // console.log(notes)
+
+    const notesWithSnippet = notes.map((note) => ({
       ...note,
-      no_contributors: note.collaborators.length(),
+      no_contributors:
+        note.type === "group" ? note.collaborators.length : undefined,
       snippet: note.content.replace(/<[^>]*>?/gm, "").slice(0, 200), // remove HTML tags, first 200 chars
       content: undefined, // remove full content from list
-      collaborators: undefined, 
+      collaborators: undefined,
     }));
 
     res.status(200).json(notesWithSnippet);
-    
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch notes", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch notes", error: error.message });
   }
 };
 
@@ -106,15 +114,21 @@ export const getNoteById = async (req, res) => {
     if (note.type === "group") {
       const group = await Group.findById(note.group);
       if (!group.members.includes(req.user._id)) {
-        return res.status(403).json({ message: "Access denied: You are not allowed to view this group note" });
+        return res.status(403).json({
+          message: "Access denied: You are not allowed to view this group note",
+        });
       }
     } else if (note.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Access denied: You are not allowed to view this note " });
+      return res.status(403).json({
+        message: "Access denied: You are not allowed to view this note ",
+      });
     }
 
     res.status(200).json(note);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch note", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch note", error: error.message });
   }
 };
 
@@ -130,15 +144,21 @@ export const updateNote = async (req, res) => {
     if (note.type === "group") {
       const group = await Group.findById(note.group);
       if (!group.members.includes(req.user._id)) {
-        return res.status(403).json({ message: "You are not allowed to edit this group note" });
+        return res
+          .status(403)
+          .json({ message: "You are not allowed to edit this group note" });
       }
     } else if (!isOwner) {
-      return res.status(403).json({ message: "You are not allowed to edit this note" });
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to edit this note" });
     }
 
     // Validate type change (only owner can change type)
     if (type && type !== note.type && !isOwner) {
-      return res.status(403).json({ message: "Only the owner can change the note type" });
+      return res
+        .status(403)
+        .json({ message: "Only the owner can change the note type" });
     }
 
     //Handle type change
@@ -147,12 +167,16 @@ export const updateNote = async (req, res) => {
 
       if (type === "group") {
         if (!groupId) {
-          return res.status(400).json({ message: "Group ID is required for group notes" });
+          return res
+            .status(400)
+            .json({ message: "Group ID is required for group notes" });
         }
 
         const group = await Group.findById(groupId);
         if (!group || !group.members.includes(req.user._id)) {
-          return res.status(403).json({ message: "You are not a member of the selected group" });
+          return res
+            .status(403)
+            .json({ message: "You are not a member of the selected group" });
         }
 
         note.group = groupId;
@@ -176,7 +200,9 @@ export const updateNote = async (req, res) => {
     await note.save();
     res.status(200).json(note);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update note", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update note", error: error.message });
   }
 };
 
@@ -187,13 +213,17 @@ export const deleteNote = async (req, res) => {
 
     // Only owner can delete
     if (note.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Only the creator can delete this note" });
+      return res
+        .status(403)
+        .json({ message: "Only the creator can delete this note" });
     }
 
     await note.deleteOne();
     res.status(200).json({ message: "Note deleted" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete note", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete note", error: error.message });
   }
 };
 
@@ -206,7 +236,9 @@ export const generateShareLink = async (req, res) => {
 
     // Only owner can generate share link
     if (note.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Only the creator can share this note" });
+      return res
+        .status(403)
+        .json({ message: "Only the creator can share this note" });
     }
 
     note.shareLink = uuidv4();
@@ -217,7 +249,9 @@ export const generateShareLink = async (req, res) => {
       shareUrl: `${process.env.FRONTEND_URL}/notes/share/${note.shareLink}`,
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to generate share link", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to generate share link", error: error.message });
   }
 };
 
@@ -242,10 +276,13 @@ export const getNoteByShareLink = async (req, res) => {
 
       if (isOwner) {
         // Owner → full access
-        responseData = note.toObject(); 
+        responseData = note.toObject();
       } else if (note.type === "group") {
         const group = await Group.findById(note.group);
-        if (group && group.members.map(id => id.toString()).includes(userId)) {
+        if (
+          group &&
+          group.members.map((id) => id.toString()).includes(userId)
+        ) {
           // Group member → full access
           responseData = note.toObject();
         }
@@ -254,48 +291,41 @@ export const getNoteByShareLink = async (req, res) => {
 
     res.status(200).json(responseData);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch note", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch note", error: error.message });
   }
 };
 
 
-// export the Note to PDF
+// export to PDF
 export const exportNotePDF = async (req, res) => {
   try {
+    
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: "Note not found" });
 
-    // Permission check
     if (note.type === "group") {
       const group = await Group.findById(note.group);
-      if (!group.members.includes(req.user._id)) {
+      if (!group || !group.members.includes(req.user._id)) {
         return res.status(403).json({ message: "Access denied" });
       }
     } else if (note.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-    const page = await browser.newPage();
-
-    // Set HTML content
-    await page.setContent(note.content, { waitUntil: 'networkidle0' });
-
-    // Generate PDF buffer
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-    });
-
-    await browser.close();
-
-    // Send PDF as response
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${note.title}.pdf"`);
-    res.send(pdfBuffer);
-
-  } catch (error) {
-    res.status(500).json({ message: "Failed to export note", error: error.message });
+    const pdfBuffer = await generateNotePDF(note); 
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${note.title || "note"}.pdf"`
+    );
+    res.end(pdfBuffer);
+    
+  } catch (err) {
+    console.error("PDF export failed:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to export note", error: err.message });
   }
 };

@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../Midleware/authMiddleware.js';
+import { verifyToken ,optionalAuth} from '../Midleware/authMiddleware.js';
 import {
   createNote,
   getNotes,
@@ -22,9 +22,9 @@ noteRoutes.delete('/:id', verifyToken, deleteNote);
 
 // Shareable link
 noteRoutes.post('/:id/share', verifyToken, generateShareLink);
-noteRoutes.get('/share/:shareLink', getNoteByShareLink); // public access via share link
+noteRoutes.get('/share/:shareLink',optionalAuth, getNoteByShareLink); // public access via share link
 
 // Export PDF
-noteRoutes.get('/:id/pdf', verifyToken, exportNotePDF);
+noteRoutes.get('/:id/export', verifyToken, exportNotePDF);
 
 export default noteRoutes;

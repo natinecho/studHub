@@ -12,6 +12,7 @@ postRoutes.get('/:id', optionalAuth, getPostById);
 postRoutes.put('/:id', verifyToken, updatePost);
 postRoutes.delete('/:id', verifyToken, deletePost);
 
+// like a post
 postRoutes.post('/:id/like', verifyToken, likePost);
 
 export default postRoutes;

@@ -26,7 +26,7 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
-
+//if user loged in return the user information else do nothing
 export const optionalAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -36,18 +36,12 @@ export const optionalAuth = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select('-password');
-
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      req.user = user;
-      next();
+      req.user = user || undefined;
     } catch (error) {
-      return res.status(401).json({ message: 'Invalid or expired token' });
+      req.user = undefined;
     }
-  } else {
-    next();
   }
+  next();
 };
+
 
