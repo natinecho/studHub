@@ -7,4 +7,5 @@ messageRouter.get("/conversation/:id", verifyToken, getMessagesForConversation);
 messageRouter.get("/conversation", verifyToken, getAllConversations);
 messageRouter.get("/group/:id", verifyToken, getMessagesForGroup);
 // messageRouter.post("/seen", verifyToken, getSeen);
+
 export default messageRouter;

@@ -1,9 +1,18 @@
 import ToDo from "../models/todoModel.js";
-import Group from "../models/groupModel.js"
+import Group from "../models/groupModel.js";
+import { logActivity } from "./ActivityController.js";
 
 export const createToDo = async (req, res) => {
   try {
-    const { title, discription, priority, type, assignedMembers, deadline, groupId } = req.body;
+    const {
+      title,
+      discription,
+      priority,
+      type,
+      assignedMembers,
+      deadline,
+      groupId,
+    } = req.body;
 
     if (type === "personal" && assignedMembers?.length > 0) {
       return res
@@ -16,7 +25,9 @@ export const createToDo = async (req, res) => {
 
     if (type === "group") {
       if (!groupId) {
-        return res.status(400).json({ message: "Group ID is required for group tasks" });
+        return res
+          .status(400)
+          .json({ message: "Group ID is required for group tasks" });
       }
 
       const group = await Group.findById(groupId);
@@ -25,12 +36,20 @@ export const createToDo = async (req, res) => {
       }
 
       if (!group.members.includes(req.user._id)) {
-        return res.status(403).json({ message: "You are not a member of this group" });
+        return res
+          .status(403)
+          .json({ message: "You are not a member of this group" });
       }
 
-      const notInGroup = assignedMembers.filter((m) => !group.members.includes(m));
+      const notInGroup = assignedMembers.filter(
+        (m) => !group.members.includes(m)
+      );
       if (notInGroup?.length > 0) {
-        return res.status(400).json({ message: "Some assigned members are not part of this group" });
+        return res
+          .status(400)
+          .json({
+            message: "Some assigned members are not part of this group",
+          });
       }
 
       validAssigned = assignedMembers;
@@ -38,6 +57,7 @@ export const createToDo = async (req, res) => {
     }
 
     if (type === "personal") {
+      validAssigned = [req.user._id];
       completions = [{ user: req.user._id, status: false }];
     }
 
@@ -53,12 +73,22 @@ export const createToDo = async (req, res) => {
       completions,
     });
 
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "task",
+      action: "Created a task",
+      title: todo.title,
+      targetId: todo._id,
+    });
+
     res.status(201).json({ message: "ToDo created successfully", ToDo: todo });
   } catch (error) {
-    res.status(400).json({ message: "Failed to create ToDo", error: error.message });
+    res
+      .status(400)
+      .json({ message: "Failed to create ToDo", error: error.message });
   }
 };
-
 
 export const getToDos = async (req, res) => {
   try {
@@ -97,22 +127,28 @@ export const getToDoById = async (req, res) => {
 
 export const updateToDo = async (req, res) => {
   try {
-    const { title, discription, priority, type, assignedMembers, deadline } = req.body;
+    const { title, discription, priority, type, assignedMembers, deadline } =
+      req.body;
 
     const todo = await ToDo.findOne({ _id: req.params.id, user: req.user._id });
     if (!todo) return res.status(404).json({ message: "ToDo not found" });
 
-    if ((type === "personal" || todo.type === "personal"  ) && assignedMembers?.length > 0) {
-      return res.status(400).json({ message: "Personal tasks cannot have assigned members" });
+    if (
+      (type === "personal" || todo.type === "personal") &&
+      assignedMembers?.length > 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Personal tasks cannot have assigned members" });
     }
 
     todo.title = title ?? todo.title;
     todo.discription = discription ?? todo.discription;
     todo.priority = priority ?? todo.priority;
     todo.deadline = deadline ?? todo.deadline;
-    
-    if (type === "group" || todo.type === "group" ) {
-      console.log("hehehe i was here")
+
+    if (type === "group" || todo.type === "group") {
+      console.log("hehehe i was here");
       todo.assignedMembers = assignedMembers;
 
       // ensure completions are synced
@@ -133,13 +169,24 @@ export const updateToDo = async (req, res) => {
       todo.completions = [{ user: req.user._id, status: false }];
     }
 
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "task",
+      action: "Updated a task",
+      title: todo.title,
+      targetId: todo._id,
+    });
+
+
     await todo.save();
     res.status(200).json(todo);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update ToDo", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update ToDo", error: error.message });
   }
 };
-
 
 export const deleteToDo = async (req, res) => {
   try {
@@ -153,6 +200,15 @@ export const deleteToDo = async (req, res) => {
         .json({ message: "Only the creator of this task can delete it" });
     }
 
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "task",
+      action: "Deleted a task",
+      title: todo.title,
+      targetId: todo._id,
+    });
+
     await todo.deleteOne();
 
     res.status(200).json({ message: "ToDo deleted" });
@@ -162,7 +218,6 @@ export const deleteToDo = async (req, res) => {
       .json({ message: "Failed to delete ToDo", error: error.message });
   }
 };
-
 
 export const toggleCompletion = async (req, res) => {
   try {
@@ -174,7 +229,9 @@ export const toggleCompletion = async (req, res) => {
     );
 
     if (!completion) {
-      return res.status(403).json({ message: "You are not assigned to this task" });
+      return res
+        .status(403)
+        .json({ message: "You are not assigned to this task" });
     }
 
     completion.status = !completion.status;
@@ -182,6 +239,8 @@ export const toggleCompletion = async (req, res) => {
 
     res.status(200).json({ message: "Your task status updated" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to toggle status", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to toggle status", error: error.message });
   }
 };

@@ -2,6 +2,8 @@ import Note from "../models/noteModel.js";
 import Group from "../models/groupModel.js";
 import { v4 as uuidv4 } from "uuid";
 import { generateNotePDF } from "../services/pdfService.js";
+import { logActivity } from "./ActivityController.js";
+
 
 
 export const createNote = async (req, res) => {
@@ -24,6 +26,15 @@ export const createNote = async (req, res) => {
       type: type || "personal",
       group: type === "group" ? groupId : null,
       tags,
+    });
+
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "note",
+      action: "Created a note",
+      title: title,
+      targetId: note._id,
     });
 
     res.status(201).json({ message: "Note created successfully", note });
@@ -197,6 +208,15 @@ export const updateNote = async (req, res) => {
       note.collaborators.push(req.user._id);
     }
 
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "note",
+      action: "Updated a note",
+      title: note.title,
+      targetId: note._id,
+    });
+
     await note.save();
     res.status(200).json(note);
   } catch (error) {
@@ -217,6 +237,15 @@ export const deleteNote = async (req, res) => {
         .status(403)
         .json({ message: "Only the creator can delete this note" });
     }
+
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "note",
+      action: "Deleted a note",
+      title: note.title,
+      targetId: note._id,
+    });
 
     await note.deleteOne();
     res.status(200).json({ message: "Note deleted" });
@@ -262,6 +291,7 @@ export const getNoteByShareLink = async (req, res) => {
 
     // public data for every one
     let responseData = {
+      id:note._id,
       title: note.title,
       content: note.content,
       tags: note.tags,

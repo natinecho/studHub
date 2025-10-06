@@ -49,25 +49,6 @@ export const getCommentsByPost = async (req, res) => {
   }
 };
 
-// optional
-// export const getCommentById = async (req, res) => {
-//   try {
-//     const comment = await Comment.findById(req.params.id)
-//       .populate("user", "username")
-//       .populate("parentComment", "content user") // include parent info
-//       .populate({
-//         path: "parentComment",
-//         populate: { path: "user", select: "username" }, // populate parent user too
-//       });
-
-//     if (!comment) return res.status(404).send({ message: "Comment not found" });
-
-//     res.status(200).json(comment);
-//   } catch (error) {
-//     res.status(500).json({ message: "Failed to Fetch Comment", error });
-//   }
-// };
-
 export const updateComment = async (req, res) => {
   try {
     const {post,parentComment,content} = req.body;
@@ -149,4 +130,3 @@ export const upvoteComment = async (req, res) => {
     res.status(500).json({ message: "Failed to upvote Comment", error });
   }
 };
-

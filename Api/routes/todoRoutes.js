@@ -10,7 +10,9 @@ todoRoutes.post('/', verifyToken,createToDo);
 todoRoutes.get('/', verifyToken, getToDos);
 todoRoutes.get('/:id', verifyToken, getToDoById);
 todoRoutes.put('/:id', verifyToken, updateToDo);
-todoRoutes.patch('/:id/completed', verifyToken, toggleCompletion);
 todoRoutes.delete('/:id', verifyToken, deleteToDo);
+
+// mark task completed
+todoRoutes.patch('/:id/completed', verifyToken, toggleCompletion);
 
 export default todoRoutes;

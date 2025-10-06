@@ -1,6 +1,7 @@
 import Post from "../../models/forumModels/postModel.js";
 import Comment from "../../models/forumModels/commentModel.js";
 import User from "../../models/userModel.js";
+import { logActivity } from "../ActivityController.js";
 
 export const createPost = async (req, res) => {
   try {
@@ -12,6 +13,16 @@ export const createPost = async (req, res) => {
       content,
       tags,
     });
+
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "post",
+      action: "Created a post",
+      title: post.title,
+      targetId: post._id,
+    });
+
     res.status(201).json(post);
   } catch (error) {
     res.status(500).json({ message: "Failed to create Post", error });
@@ -169,6 +180,15 @@ export const updatePost = async (req, res) => {
       commentCount: commentCount,
     };
 
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "post",
+      action: "Updated a post",
+      title: postsWithFav.title,
+      targetId: postsWithFav._id,
+    });
+
     return res.status(200).json(postsWithFav);
   } catch (error) {
     res.status(500).json({ message: "Failed to update Post", error });
@@ -187,6 +207,16 @@ export const deletePost = async (req, res) => {
     if(req.user._id.toString() !== post.user._id.toString()){
       return res.status(403).send({ message: "You are not allowed to delete this post" });
     }
+
+    await logActivity({
+      user: req.user._id,
+      type: "post",
+      action: "Deleted a post",
+      title: post.title,
+      targetId: post._id,
+    });
+
+
     await Comment.deleteMany({ post: req.params.id });
 
     res.status(200).json({ message: "Post and related comments deleted" });

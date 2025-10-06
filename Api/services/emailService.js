@@ -12,8 +12,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   }});
-// Gene
-// rate professional HTML template
+// Generate professional HTML template
 const generatePasswordResetTemplate = (resetLink, username) => `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
     <h2 style="color: #333;">Hello ${username},</h2>

@@ -2,6 +2,8 @@ import Group from "../models/groupModel.js";
 import GroupInvite from "../models/groupinviteModel.js";
 import User from "../models/userModel.js";
 
+import { logActivity } from "./ActivityController.js";
+
 // CRUD for the group
 export const createGroup = async (req, res) => {
   try {
@@ -14,6 +16,15 @@ export const createGroup = async (req, res) => {
       createdBy: user,
       members: [user],
       admins: [user],
+    });
+
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "group",
+      action: "Created a group",
+      title: name,
+      targetId: group._id,
     });
 
     res.status(201).json(group);
@@ -96,6 +107,15 @@ export const deleteGroup = async (req, res) => {
     if (!group.admins.includes(req.user._id.toString())) {
       return res.status(403).json({ message: "Only admins can delete" });
     }
+
+    //for recent acctivity endpoint
+    await logActivity({
+      user: req.user._id,
+      type: "group",
+      action: "Deleted a group",
+      title: group.name,
+      targetId: group._id,
+    });
 
     await Group.findByIdAndDelete(req.params.id);
 
@@ -279,6 +299,16 @@ export const promoteToAdmin = async (req, res) => {
   if (!group.admins.includes(req.user._id)) return res.status(403).json({ message: "Only admins can promote" });
 
   if (!group.admins.includes(req.params.userId)) {
+
+      //for recent acctivity endpoint
+      await logActivity({
+        user: req.params.id,
+        type: "group",
+        action: "Promoted to be admin",
+        title: group.name,
+        targetId: group._id,
+      });
+
     await Group.findByIdAndUpdate(
         req.params.id,
         { $addToSet: { admins: req.params.userId} },

@@ -14,6 +14,8 @@ import commentRoutes from './routes/forumRoutes/commentRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import setupSocket from "./socket/chatSocket.js";
+import AIRoute from './routes/AIchatRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 // import groupTaskRoutes from './routes/groupTaskRoutes.js';
 // import taskRoutes from './routes/taskRoutes.js';
@@ -41,6 +43,8 @@ app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/chat', messageRouter);
+app.use('/api/ai', AIRoute);
+app.use('/api/dashboard',dashboardRoutes)
 
 // app.use('/api/tasks', taskRoutes);
 // app.use('/api/group-tasks', groupTaskRoutes);
