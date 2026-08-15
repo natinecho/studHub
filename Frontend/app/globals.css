@@ -1,0 +1,1247 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Industry design system — the source of truth for this app's look.
+   Steel-blue on a light technical ground, Barlow Condensed over Barlow.
+
+   The Student Hub screens soften the pure blueprint wireframe: cards are
+   rounded 16px, buttons 10px, tags are pills, and the "+" registration
+   corner marks are dropped. That is deliberate and comes from the design's
+   own `.app` overrides — see `_ds/.../readme.md` for the base system.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* — Industry raw tokens (used directly by the app screens) — */
+  --color-bg: #f2f2f3;
+  --color-surface: #e9e9ea;
+  --color-text: #1d1f20;
+  --color-accent: #5980a6;
+  --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
+
+  --color-neutral-100: #f5f5f8;
+  --color-neutral-200: #e7e7ea;
+  --color-neutral-300: #d4d4d7;
+  --color-neutral-400: #b7b7ba;
+  --color-neutral-500: #98989b;
+  --color-neutral-600: #7a7a7d;
+  --color-neutral-700: #5d5d60;
+  --color-neutral-800: #424244;
+  --color-neutral-900: #2b2b2d;
+
+  /* Modal / palette backdrop. Deliberately NOT derived from the neutral ramp:
+     that ramp inverts in dark mode, which would turn the scrim into a white
+     haze over a dark app. The scrim is always a darkening layer. */
+  --color-scrim: rgb(23 25 26 / 45%);
+  --color-scrim-soft: rgb(23 25 26 / 35%);
+
+  /* — Status roles. The steel accent carries every other state, so feedback
+       needs its own hues: an error must not read as a link. — */
+  --color-danger: #b3384c;
+  --color-danger-fg: #7d2434;
+  --color-danger-bg: #fdeef1;
+  --color-success: #2f7d55;
+  --color-success-fg: #1f5c3d;
+  --color-success-bg: #ecf7f0;
+  --color-warning: #a3701c;
+  --color-warning-fg: #7a5211;
+  --color-warning-bg: #fdf4e3;
+  --color-info: var(--color-accent);
+  --color-info-fg: var(--color-accent-800);
+  --color-info-bg: var(--color-accent-100);
+
+  --color-accent-100: #eef6ff;
+  --color-accent-200: #d6ebff;
+  --color-accent-300: #b5d9fd;
+  --color-accent-400: #94bce3;
+  --color-accent-500: #749dc4;
+  --color-accent-600: #597ea3;
+  --color-accent-700: #416180;
+  --color-accent-800: #2c455d;
+  --color-accent-900: #1d2d3d;
+
+  /* Wired to next/font in layout.tsx, with a stack fallback. */
+  /* The var() fallbacks matter: without them, a missing next/font variable
+     makes the whole declaration invalid rather than degrading gracefully. */
+  --font-heading: var(--font-barlow-condensed, "Barlow Condensed"), system-ui, sans-serif;
+  --font-body: var(--font-barlow, "Barlow"), system-ui, sans-serif;
+  --font-heading-weight: 600;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2b2b2d 22%, transparent);
+
+  /* — shadcn/Radix contract, mapped onto the Industry palette so the
+       existing UI kit inherits the theme without being rewritten — */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-bg);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-bg);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-bg);
+  --secondary: var(--color-surface);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface);
+  --muted-foreground: color-mix(in srgb, var(--color-text) 55%, transparent);
+  /* Tailwind owns the `--color-*` namespace, so `@theme inline` re-declares
+     `--color-accent` as `var(--accent)`. Keeping this role equal to the steel
+     accent means both definitions resolve to the same colour instead of
+     silently disagreeing. For the pale tint use `--color-accent-100`. */
+  --accent: var(--color-accent);
+  --accent-foreground: var(--color-bg);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-danger-fg);
+  --border: var(--color-divider);
+  --input: var(--color-divider);
+  --ring: var(--color-accent);
+
+  --chart-1: var(--color-accent);
+  --chart-2: var(--color-accent-400);
+  --chart-3: var(--color-accent-700);
+  --chart-4: var(--color-accent-300);
+  --chart-5: var(--color-accent-800);
+
+  /* 10px — matches the design's `.app .btn` / `.app .input` radius. */
+  --radius: 0.625rem;
+
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-text);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: var(--color-bg);
+  --sidebar-accent: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  --sidebar-accent-foreground: var(--color-accent-800);
+  --sidebar-border: var(--color-divider);
+  --sidebar-ring: var(--color-accent);
+}
+
+/* The Industry system is specified light-only. This dark variant keeps the
+   steel accent and inverts the ground so the Preferences theme switch works;
+   per the readme, a dark ground steps the accent to 400 rather than 600. */
+.dark {
+  --color-bg: #17191a;
+  --color-surface: #202325;
+  --color-text: #eceded;
+  --color-accent: #749dc4;
+  --color-divider: color-mix(in srgb, #eceded 18%, transparent);
+
+  /* Darker than the light scrim: the card behind it is already dark, so it
+     takes more coverage before the backdrop reads as "behind glass". */
+  --color-scrim: rgb(0 0 0 / 66%);
+  --color-scrim-soft: rgb(0 0 0 / 55%);
+
+  /* Lifted hues — the light-mode reds and greens go muddy on a dark ground. */
+  --color-danger: #e2697d;
+  --color-danger-fg: #f0a3ae;
+  --color-danger-bg: #34191f;
+  --color-success: #63b98b;
+  --color-success-fg: #96d4b1;
+  --color-success-bg: #16291f;
+  --color-warning: #d9ac5a;
+  --color-warning-fg: #e8c98a;
+  --color-warning-bg: #2e2415;
+  --color-info: var(--color-accent);
+  --color-info-fg: var(--color-accent-800);
+  --color-info-bg: var(--color-accent-100);
+
+  --color-accent-100: #1d2d3d;
+  --color-accent-200: #2c455d;
+  --color-accent-300: #416180;
+  --color-accent-400: #597ea3;
+  --color-accent-500: #749dc4;
+  --color-accent-600: #94bce3;
+  --color-accent-700: #b5d9fd;
+  --color-accent-800: #d6ebff;
+  --color-accent-900: #eef6ff;
+
+  --color-neutral-100: #2b2b2d;
+  --color-neutral-200: #424244;
+  --color-neutral-300: #5d5d60;
+  --color-neutral-400: #7a7a7d;
+  --color-neutral-500: #98989b;
+  --color-neutral-600: #b7b7ba;
+  --color-neutral-700: #d4d4d7;
+  --color-neutral-800: #e7e7ea;
+  --color-neutral-900: #f5f5f8;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #000 40%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #000 45%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #000 55%, transparent);
+}
+
+@theme inline {
+  /* `font-sans` is what Tailwind's preflight puts on <html>. Note we do NOT
+     re-declare --font-heading here: `@theme` would emit a self-referential
+     `--font-heading: var(--font-heading)`. Headings read the :root token via
+     the base layer instead. */
+  --font-sans: var(--font-body);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* ── Chrome ────────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-rise-in {
+  animation: riseIn 0.28s ease both;
+}
+.animate-fade-in {
+  animation: modalIn 0.16s ease both;
+}
+.animate-rise-in-fast {
+  animation: riseIn 0.18s ease both;
+}
+.animate-live-pulse {
+  animation: livePulse 2.4s infinite;
+}
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+/* ── Skeleton placeholders ─────────────────────────────────────────────── */
+
+/* The sweep travels further than the element is wide so the highlight enters
+   and leaves cleanly instead of appearing to bounce at the edges. */
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* `.sk` is a single placeholder bar. Size and radius come from utilities at
+   the call site; this only owns the tint and the sweep, so a skeleton can
+   mirror whatever it stands in for. */
+.sk {
+  display: block;
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--color-text) 9%, transparent);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-text) 8%, transparent) 45%,
+    color-mix(in srgb, var(--color-text) 8%, transparent) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Staggering the sweep across a list reads as one wave rather than a row of
+   synchronised blinks. */
+/* `--sk-i` is set per row and inherits down to every bar inside it. */
+.sk-stagger .sk {
+  animation-delay: calc(var(--sk-i, 0) * 90ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    background-image: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Component layer — the design's inline style strings expressed as classes.
+   Active/selected state is driven by `data-active="true"` so React just
+   toggles an attribute instead of swapping style objects.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* A framed panel. The blueprint object, softened to 16px for the app. */
+.bp {
+  position: relative;
+  border: 1px solid var(--color-divider);
+  border-radius: 16px;
+  background: transparent;
+}
+.bp-hover:hover {
+  border-color: var(--color-accent);
+}
+
+/* Segmented pill control — the tab row used on every screen. */
+.seg-group {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+}
+.seg-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 7px 13px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.seg-btn:hover:not([data-active="true"]) {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+.seg-btn[data-active="true"] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Horizontally scrolling tab strip — the narrow-screen form of `.vtab`.
+   The row scrolls instead of wrapping or squashing, snaps so a tab never
+   stops half-visible, and hides its scrollbar because the fade at the right
+   edge already says "there is more". */
+.tab-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 3px;
+  margin-inline: -3px;
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 9px;
+}
+.tab-strip::-webkit-scrollbar {
+  display: none;
+}
+.tab-strip .vtab {
+  width: auto;
+  flex: none;
+  scroll-snap-align: start;
+  justify-content: center;
+  padding: 8px 15px;
+  border-radius: 999px;
+  border-color: var(--color-divider);
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tab-strip .vtab[data-active="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Sidebar rail navigation item. */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease;
+}
+.nav-item:hover:not([data-active="true"]) {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.nav-item[data-active="true"] {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-800);
+  font-weight: 500;
+}
+
+/* Selectable card in a list (notes, posts, groups). */
+.list-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: 15px;
+  border-radius: 16px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+.list-card:hover:not([data-active="true"]) {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.list-card[data-active="true"] {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+
+/* Vertical tab, used by Settings. */
+.vtab {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+.vtab:hover:not([data-active="true"]) {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.vtab[data-active="true"] {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent-800);
+}
+
+/* Settings panels on a phone. The desktop 20px inset costs a tenth of the
+   usable width on a 360px screen, and the section headings are sized for a
+   200px sidebar sitting beside them, not for a full-bleed column. */
+@media (max-width: 880px) {
+  .settings-panel {
+    gap: 14px;
+  }
+  .settings-panel .bp {
+    padding: 15px;
+    border-radius: 14px;
+  }
+  .settings-panel h2 {
+    font-size: 18px;
+  }
+  .settings-panel .action-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding-block: 11px;
+  }
+  /* Fields go full width rather than trying to pair up in ~170px columns. */
+  .settings-panel [class*="minmax(180px"],
+  .settings-panel [class*="minmax(200px"],
+  .settings-panel [class*="minmax(220px"] {
+    grid-template-columns: 1fr;
+  }
+  /* A 42px switch and a two-line label do not both fit comfortably next to a
+     wrapped description, so the row gets a little more breathing height. */
+  .settings-panel .switch-track {
+    margin-left: 4px;
+  }
+}
+
+/* Pill tags. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pill-accent {
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+}
+.pill-neutral {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+}
+.pill-outline {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+.pill-solid {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Priority chips — high reads darkest, low is an outline. */
+.prio {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.prio-high {
+  background: var(--color-accent-800);
+  color: var(--color-bg);
+}
+.prio-medium {
+  background: var(--color-accent-200);
+  color: var(--color-accent-800);
+}
+.prio-low {
+  border: 1px solid var(--color-divider);
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+
+/* Square checkbox used by tasks and the note editor's task blocks. */
+.check-box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  cursor: pointer;
+  border-radius: 7px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: transparent;
+  transition: background 0.16s ease;
+}
+.check-box[data-active="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Circular send button; disabled until there is something to send. */
+.send-btn {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 32%, transparent);
+  cursor: not-allowed;
+  transition: background 0.16s ease;
+}
+.send-btn[data-active="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  cursor: pointer;
+}
+
+/* Uppercase primary action used by modals and the reply box. */
+.action-btn {
+  padding: 9px 16px;
+  white-space: nowrap;
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 38%, transparent);
+  cursor: not-allowed;
+  transition: background 0.16s ease;
+}
+.action-btn[data-active="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  cursor: pointer;
+}
+.action-btn[data-active="true"]:hover {
+  background: var(--color-accent-600);
+}
+
+/* Toggle switch — Notifications panel. */
+.switch-track {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  flex: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+.switch-track[data-active="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-text) 45%, transparent);
+  transition:
+    left 0.18s ease,
+    background 0.18s ease;
+}
+.switch-track[data-active="true"] .switch-knob {
+  left: 22px;
+  background: var(--color-bg);
+}
+
+/* Round monogram avatar. */
+.avatar-mono {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--color-accent-400);
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+}
+.avatar-plain {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--color-divider);
+  font-family: var(--font-heading);
+  overflow: hidden;
+}
+
+/* Chat / AI message bubble. */
+.bubble {
+  max-width: min(78%, 520px);
+  display: grid;
+  gap: 4px;
+  padding: 11px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.bubble[data-own="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Text input matching the design's `.input` at the app's 10px radius. */
+.field-input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+}
+.field-input::placeholder {
+  color: color-mix(in srgb, var(--color-text) 42%, transparent);
+}
+.field-input:hover {
+  border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.field-input:focus-visible {
+  border-color: var(--color-accent);
+  outline-offset: 0;
+}
+textarea.field-input {
+  min-height: 90px;
+  resize: vertical;
+  border-radius: 14px;
+}
+select.field-input {
+  cursor: pointer;
+}
+
+/* Uppercase micro-label above fields and section headers. */
+.field-label {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
+}
+.eyebrow {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+
+/* ── Feedback ──────────────────────────────────────────────────────────────
+   Inline messages that report an outcome. Tone comes from the status roles,
+   never from the steel accent — an error painted accent-blue reads as a link.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid;
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.alert-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+}
+.alert-body {
+  margin: 0;
+  opacity: 0.85;
+}
+.alert-icon {
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+.alert[data-tone="error"] {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
+}
+.alert[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--color-warning) 45%, transparent);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-fg);
+}
+.alert[data-tone="success"] {
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
+  background: var(--color-success-bg);
+  color: var(--color-success-fg);
+}
+.alert[data-tone="info"] {
+  border-color: color-mix(in srgb, var(--color-info) 45%, transparent);
+  background: var(--color-info-bg);
+  color: var(--color-info-fg);
+}
+
+/* The one-line form used under a field or at the foot of a modal. */
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-danger-fg);
+}
+
+/* Toast tones. Sonner renders its own markup, so this reaches in by data-type
+   rather than us re-templating every toast call site. */
+[data-sonner-toast][data-type="error"] {
+  --normal-bg: var(--color-danger-bg);
+  --normal-text: var(--color-danger-fg);
+  --normal-border: color-mix(in srgb, var(--color-danger) 45%, transparent);
+}
+[data-sonner-toast][data-type="success"] {
+  --normal-bg: var(--color-success-bg);
+  --normal-text: var(--color-success-fg);
+  --normal-border: color-mix(in srgb, var(--color-success) 45%, transparent);
+}
+[data-sonner-toast][data-type="warning"] {
+  --normal-bg: var(--color-warning-bg);
+  --normal-text: var(--color-warning-fg);
+  --normal-border: color-mix(in srgb, var(--color-warning) 45%, transparent);
+}
+[data-sonner-toast][data-type="info"] {
+  --normal-bg: var(--color-info-bg);
+  --normal-text: var(--color-info-fg);
+  --normal-border: color-mix(in srgb, var(--color-info) 45%, transparent);
+}
+[data-sonner-toast] [data-title] {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+[data-sonner-toast] [data-description] {
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+
+/* ── Forum votes ───────────────────────────────────────────────────────────
+   Up and down are the same control with opposite tone, so they share a class
+   and differ only by `data-dir`. Active state is `data-active`, as elsewhere.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+.vote-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  color: var(--color-text);
+}
+.vote-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.vote-btn[data-active="true"][data-dir="up"] {
+  border-color: color-mix(in srgb, var(--color-success) 55%, transparent);
+  background: var(--color-success-bg);
+  color: var(--color-success-fg);
+}
+.vote-btn[data-active="true"][data-dir="down"] {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
+}
+
+/* Plain text affordance next to the votes — "Reply", "3 replies". */
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+.link-btn:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  color: var(--color-accent);
+}
+.link-btn[data-active="true"] {
+  color: var(--color-accent);
+}
+
+/* The rail down the left of a nested reply group — it is what makes the
+   indentation read as "these answer that" rather than as a stray margin. */
+.thread-branch {
+  border-left: 1px solid var(--color-divider);
+  padding-left: 12px;
+  margin-left: 12px;
+  transition: border-color 0.14s ease;
+}
+.thread-branch:hover {
+  border-left-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+/* Rows in the activity feed, member lists and notification popover. */
+.hover-row:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Rich text (tiptap note editor) ─────────────────────────────────────── */
+
+.prose {
+  color: var(--color-text);
+  max-width: none;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.prose :first-child {
+  margin-top: 0;
+}
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  color: var(--color-text);
+}
+.prose h1 {
+  font-size: 28px;
+  margin: 1.1em 0 0.5em;
+  letter-spacing: -0.02em;
+}
+.prose h2 {
+  font-size: 22px;
+  margin: 1.4em 0 0.5em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.prose h3 {
+  font-size: 19px;
+  margin: 1.2em 0 0.4em;
+}
+.prose p {
+  margin: 0 0 0.9em;
+  text-wrap: pretty;
+}
+.prose ul,
+.prose ol {
+  margin: 0.9em 0;
+  padding-left: 1.4em;
+}
+.prose ul {
+  list-style: disc;
+}
+.prose ol {
+  list-style: decimal;
+}
+.prose li {
+  margin: 0.3em 0;
+}
+.prose blockquote {
+  margin: 1.2em 0;
+  padding: 14px 18px;
+  border-left: 2px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+  font-style: italic;
+  color: var(--color-accent-800);
+}
+.prose code {
+  background: var(--color-surface);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.prose pre {
+  background: var(--color-surface);
+  padding: 14px;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1.2em 0;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+.prose a {
+  color: var(--color-accent-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose mark {
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: inherit;
+}
+.prose hr {
+  border: 0;
+  height: 1px;
+  background: var(--color-divider);
+  margin: 1.6em 0;
+}
+
+/* Bullet styles. `disc` needs no rule — it is the browser default and the
+   attribute is omitted for it, which keeps stored HTML clean. The glyph ones
+   drop the marker and draw their own so the character is ours to choose. */
+.prose ul[data-bullet="circle"] {
+  list-style: circle;
+}
+.prose ul[data-bullet="square"] {
+  list-style: square;
+}
+.prose ul[data-bullet="dash"],
+.prose ul[data-bullet="arrow"],
+.prose ul[data-bullet="check"] {
+  list-style: none;
+  padding-left: 1.1em;
+}
+.prose ul[data-bullet="dash"] > li,
+.prose ul[data-bullet="arrow"] > li,
+.prose ul[data-bullet="check"] > li {
+  position: relative;
+  padding-left: 0.35em;
+}
+.prose ul[data-bullet="dash"] > li::before,
+.prose ul[data-bullet="arrow"] > li::before,
+.prose ul[data-bullet="check"] > li::before {
+  position: absolute;
+  left: -0.95em;
+  color: var(--color-accent);
+}
+.prose ul[data-bullet="dash"] > li::before {
+  content: "–";
+}
+.prose ul[data-bullet="arrow"] > li::before {
+  content: "→";
+}
+.prose ul[data-bullet="check"] > li::before {
+  content: "✓";
+}
+
+/* Equations. A serif italic with a touch of letter-spacing is what makes a
+   run of Unicode maths read as an expression rather than as prose. */
+.prose .math-inline,
+.math-inline {
+  font-family: Cambria, "Times New Roman", Georgia, serif;
+  font-style: italic;
+  font-size: 1.05em;
+  letter-spacing: 0.01em;
+  padding: 0 0.15em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+.prose .math-block,
+.math-block {
+  font-family: Cambria, "Times New Roman", Georgia, serif;
+  font-style: italic;
+  font-size: 1.18em;
+  text-align: center;
+  margin: 1.1em 0;
+  padding: 12px 16px;
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  overflow-x: auto;
+}
+/* An empty display equation would collapse to a sliver with no cursor target,
+   so it announces what it is until something is typed into it. */
+.tiptap .math-block:empty::before {
+  content: "Type your equation — try the Ω picker or :sqrt";
+  font-style: normal;
+  font-size: 0.75em;
+  color: color-mix(in srgb, var(--color-text) 38%, transparent);
+}
+
+/* tiptap task lists */
+.prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.prose ul[data-type="taskList"] li > label {
+  flex: none;
+  margin-top: 2px;
+}
+.prose ul[data-type="taskList"] li > div {
+  min-width: 0;
+}
+.prose ul[data-type="taskList"] input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+}
+
+/* tiptap placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--color-text) 38%, transparent);
+}
+.tiptap:focus {
+  outline: none;
+}
+
+/* ── Accessibility ─────────────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
