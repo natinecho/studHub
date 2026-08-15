@@ -7,6 +7,7 @@ import {
   updateNote,
   deleteNote,
   generateShareLink,
+  revokeShareLink,
   getNoteByShareLink,
   exportNotePDF
 } from '../controllers/noteController.js';
@@ -22,6 +23,7 @@ noteRoutes.delete('/:id', verifyToken, deleteNote);
 
 // Shareable link
 noteRoutes.post('/:id/share', verifyToken, generateShareLink);
+noteRoutes.delete('/:id/share', verifyToken, revokeShareLink); // stop sharing
 noteRoutes.get('/share/:shareLink',optionalAuth, getNoteByShareLink); // public access via share link
 
 // Export PDF

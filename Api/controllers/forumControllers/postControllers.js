@@ -148,8 +148,23 @@ export const getPostById = async (req, res) => {
 
 export const updatePost = async (req, res) => {
   try {
-    const updates = req.body;
-    const post = await Post.findByIdAndUpdate(
+    // Whitelist: `req.body` used to be passed through whole, which let a
+    // caller rewrite `likes` or hand the post to another `user`.
+    const { title, content, tags } = req.body;
+    const updates = {};
+    if (title !== undefined) updates.title = title;
+    if (content !== undefined) updates.content = content;
+    if (tags !== undefined) updates.tags = tags;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "Nothing to update" });
+    }
+
+    // `findByIdAndUpdate` takes an id, not a filter — passing the owner check
+    // as an object made Mongoose try to cast `{_id, user}` as the _id and
+    // throw, so every edit came back a 500. The author check belongs in the
+    // filter, where a non-owner simply matches nothing.
+    const post = await Post.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       updates,
       {
@@ -157,12 +172,8 @@ export const updatePost = async (req, res) => {
         runValidators: true,
       }
     ).populate("user", "username");
-    
+
     if (!post) return res.status(404).send({ message: "Post not found" });
-    
-    if(req.user._id.toString() !== post.user._id.toString()){
-      return res.status(403).send({ message: "You are not allowed to update this post" });
-    }
 
     const commentCount = await Comment.countDocuments({ post: post._id });
 
@@ -197,16 +208,15 @@ export const updatePost = async (req, res) => {
 
 export const deletePost = async (req, res) => {
   try {
-    const post = await Post.findByIdAndDelete({
+    // As in updatePost: this has to be findOneAndDelete, because
+    // findByIdAndDelete reads its argument as the id itself. The author check
+    // is part of the filter, so someone else's post is simply not found.
+    const post = await Post.findOneAndDelete({
       _id: req.params.id,
       user: req.user._id,
     });
 
     if (!post) return res.status(404).send({ message: "Post not found" });
-
-    if(req.user._id.toString() !== post.user._id.toString()){
-      return res.status(403).send({ message: "You are not allowed to delete this post" });
-    }
 
     await logActivity({
       user: req.user._id,

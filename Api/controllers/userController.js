@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
+import Post from "../models/forumModels/postModel.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -52,6 +53,32 @@ export const getUserProfile = async (req, res) => {
   if (!user) return res.status(404).send({ message: "User not found" });
 
   res.status(200).json(user);
+};
+
+// GET /api/users?search=  — find people to message or invite to a group
+export const searchUsers = async (req, res) => {
+  try {
+    const { search, limit } = req.query;
+
+    const query = { _id: { $ne: req.user._id } };
+    if (search) {
+      query.$or = [
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const users = await User.find(query)
+      .select("username email profile_pic bio")
+      .limit(Math.min(Number(limit) || 20, 50))
+      .lean();
+
+    res.status(200).json(users);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to search users", error: error.message });
+  }
 };
 
 export const updateProfile = async (req,res) => {

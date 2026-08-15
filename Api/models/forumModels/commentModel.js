@@ -18,6 +18,10 @@ const commentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Every comment read is "the comments on this post", either listed in order
+// or counted; the post-list aggregate matches { post: { $in: [...] } }.
+commentSchema.index({ post: 1, createdAt: 1 });
+
 const Comment = mongoose.model("Comment", commentSchema);
 
 export default Comment;

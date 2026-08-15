@@ -7,5 +7,9 @@ const groupInviteSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' }
 }, { timestamps: true });
 
+// "My pending invites", and the duplicate-invite check before sending one.
+groupInviteSchema.index({ invitedUser: 1, status: 1 });
+groupInviteSchema.index({ group: 1, invitedUser: 1, status: 1 });
+
 const GroupInvite = mongoose.model('GroupInvite', groupInviteSchema);
 export default GroupInvite;

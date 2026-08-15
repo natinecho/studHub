@@ -1,8 +1,14 @@
+// FIRST import, and it must stay first. ES module imports are hoisted and
+// evaluated before any statement in this file, so a `dotenv.config()` call
+// further down runs *after* every module below has already been initialised —
+// which left AIService.js building its Gemini client with no API key.
+import 'dotenv/config';
+
 import express from 'express';
 import http from "http";
 
+import compression from 'compression';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import { Server } from "socket.io";
 
@@ -14,14 +20,14 @@ import commentRoutes from './routes/forumRoutes/commentRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import setupSocket from "./socket/chatSocket.js";
+import UserStatus from './models/chatModels/userStatusModel.js';
 import AIRoute from './routes/AIchatRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 
 // import groupTaskRoutes from './routes/groupTaskRoutes.js';
 // import taskRoutes from './routes/taskRoutes.js';
 
-dotenv.config();
-connectDB(); // MongoDB connection
+await connectDB(); // MongoDB connection — must succeed before we accept traffic
 
 
 const app = express();
@@ -31,6 +37,12 @@ const io = new Server(server, { cors: {
     origin: "*", // Or restrict to your frontend origin
     methods: ["GET", "POST"]
   }});
+
+// gzip every response big enough to be worth it. These payloads are JSON —
+// long lists of notes, posts and messages — which compresses to a fraction of
+// its size, so this is the cheapest bandwidth win available. Must be mounted
+// before the routes to wrap their responses.
+app.use(compression());
 
 app.use(cors());
 app.use(express.json()); // Parse JSON bodies
@@ -58,6 +70,10 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// Nobody is connected to a process that has just started. Without this, anyone
+// whose socket died with the previous process stays "online" forever.
+await UserStatus.updateMany({ isOnline: true }, { isOnline: false });
 
 setupSocket(io);
 

@@ -8,11 +8,19 @@ export const logActivity = async ({ user, type, action, title, targetId }) => {
   }
 };
 
+// The dashboard shows a glance, not an audit log: the five newest entries, and
+// only the kinds worth surfacing (chat messages are deliberately not logged).
+const RECENT_LIMIT = 5;
+const RECENT_TYPES = ["note", "task", "post", "group"];
+
 export const getRecentActivity = async (req, res) => {
   try {
-    const activities = await Activity.find({ user: req.user._id })
+    const activities = await Activity.find({
+      user: req.user._id,
+      type: { $in: RECENT_TYPES },
+    })
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(RECENT_LIMIT)
       .lean();
 
     res.status(200).json({

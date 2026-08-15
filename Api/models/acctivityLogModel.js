@@ -12,6 +12,9 @@ const activitySchema = new mongoose.Schema(
     {timestamps:true}
 )
 
+// The dashboard feed: this user's five newest entries of a few types.
+activitySchema.index({ user: 1, type: 1, createdAt: -1 })
+
 const Activity  = mongoose.model("Activity ",activitySchema)
 
 export default Activity ;

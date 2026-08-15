@@ -5,6 +5,7 @@ import {
   getUserProfile,
   favoritePosts,
   updateProfile,
+  searchUsers,  
 } from "../controllers/userController.js";
 import {
   resetPassword,
@@ -17,6 +18,8 @@ const userRoutes = express.Router();
 
 userRoutes.post("/register", registerUser);
 userRoutes.post("/login", loginUser);
+// directory search — must stay above "/:id"-style routes
+userRoutes.get("/", verifyToken, searchUsers);
 userRoutes.get("/me", verifyToken, getUserProfile);
 userRoutes.put("/me", verifyToken, updateProfile);
 

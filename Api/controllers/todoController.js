@@ -7,6 +7,7 @@ export const createToDo = async (req, res) => {
     const {
       title,
       discription,
+      category,
       priority,
       type,
       assignedMembers,
@@ -65,6 +66,7 @@ export const createToDo = async (req, res) => {
       user: req.user._id,
       title,
       discription,
+      category,
       priority,
       type,
       group: type === "group" ? groupId : null,
@@ -93,19 +95,46 @@ export const createToDo = async (req, res) => {
 export const getToDos = async (req, res) => {
   try {
     const { priority, completed, type, sortBy } = req.query;
-    const filter = { user: req.user._id };
+
+    // A task is visible if you created it OR it was assigned to you.
+    const filter = {
+      $or: [{ user: req.user._id }, { assignedMembers: req.user._id }],
+    };
 
     if (priority) filter.priority = priority;
-    if (completed) filter.completed = completed === "true";
     if (type) filter.type = type;
 
-    let query = ToDo.find(filter);
+    // `completed` lives per-user inside `completions`, not as a top-level field.
+    if (completed !== undefined) {
+      filter.completions = {
+        $elemMatch: { user: req.user._id, status: completed === "true" },
+      };
+    }
+
+    let query = ToDo.find(filter)
+      .populate("assignedMembers", "username profile_pic")
+      .populate("group", "name");
 
     if (sortBy === "deadline") query = query.sort({ deadline: 1 });
-    if (sortBy === "priority") query = query.sort({ priority: 1 });
 
-    const todos = await query;
-    res.status(200).json(todos);
+    const todos = await query.lean();
+
+    // Surface this user's own completion state so clients don't have to dig.
+    const withCompletion = todos.map((t) => ({
+      ...t,
+      completed:
+        t.completions?.find(
+          (c) => c.user?.toString() === req.user._id.toString()
+        )?.status ?? false,
+    }));
+
+    // "high" > "medium" > "low" — a plain sort would order them alphabetically.
+    if (sortBy === "priority") {
+      const rank = { high: 0, medium: 1, low: 2 };
+      withCompletion.sort((a, b) => rank[a.priority] - rank[b.priority]);
+    }
+
+    res.status(200).json(withCompletion);
   } catch (error) {
     res
       .status(500)
@@ -127,8 +156,16 @@ export const getToDoById = async (req, res) => {
 
 export const updateToDo = async (req, res) => {
   try {
-    const { title, discription, priority, type, assignedMembers, deadline } =
-      req.body;
+    const {
+      title,
+      discription,
+      category,
+      priority,
+      type,
+      groupId,
+      assignedMembers,
+      deadline,
+    } = req.body;
 
     const todo = await ToDo.findOne({ _id: req.params.id, user: req.user._id });
     if (!todo) return res.status(404).json({ message: "ToDo not found" });
@@ -144,30 +181,55 @@ export const updateToDo = async (req, res) => {
 
     todo.title = title ?? todo.title;
     todo.discription = discription ?? todo.discription;
+    todo.category = category ?? todo.category;
     todo.priority = priority ?? todo.priority;
-    todo.deadline = deadline ?? todo.deadline;
+    // `deadline` is the one field a user can deliberately empty, so an explicit
+    // "" or null clears it. `?? todo.deadline` alone made a due date permanent.
+    if (deadline !== undefined) todo.deadline = deadline || null;
 
-    if (type === "group" || todo.type === "group") {
-      console.log("hehehe i was here");
-      todo.assignedMembers = assignedMembers;
+    // The type itself was never written back, so switching a task between
+    // personal and group changed the members but left it the type it started as.
+    const nextType = type ?? todo.type;
 
-      // ensure completions are synced
-      const existing = todo.completions.map((c) => c.user.toString());
-      assignedMembers.forEach((m) => {
-        if (!existing.includes(m.toString())) {
-          todo.completions.push({ user: m, status: false });
+    if (nextType === "group") {
+      if (groupId) todo.group = groupId;
+      if (!todo.group) {
+        return res
+          .status(400)
+          .json({ message: "Group tasks need a group" });
+      }
+
+      // Only touch the roster when the caller actually sent one. Reading
+      // `.forEach` off an absent list is what turned a partial update into a 500.
+      if (assignedMembers !== undefined) {
+        const members = (assignedMembers || []).map((m) => m.toString());
+        const existing = todo.completions.map((c) => c.user.toString());
+
+        todo.assignedMembers = members;
+        for (const member of members) {
+          if (!existing.includes(member)) {
+            todo.completions.push({ user: member, status: false });
+          }
         }
-      });
-      // remove completions of users no longer assigned
-      todo.completions = todo.completions.filter((c) =>
-        assignedMembers.includes(c.user.toString())
+        // Someone unassigned should not keep counting toward the task.
+        todo.completions = todo.completions.filter((c) =>
+          members.includes(c.user.toString())
+        );
+      }
+    } else {
+      todo.group = null;
+      todo.assignedMembers = [];
+      // Demoting to personal keeps the owner's own tick rather than resetting
+      // it — the task did not become un-done just because it stopped being shared.
+      const mine = todo.completions.find(
+        (c) => c.user.toString() === req.user._id.toString()
       );
+      todo.completions = [
+        { user: req.user._id, status: mine ? mine.status : false },
+      ];
     }
 
-    if (type === "personal") {
-      todo.assignedMembers = [];
-      todo.completions = [{ user: req.user._id, status: false }];
-    }
+    todo.type = nextType;
 
     //for recent acctivity endpoint
     await logActivity({

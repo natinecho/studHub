@@ -35,7 +35,13 @@ export const createGroup = async (req, res) => {
 };
 export const getGroup = async (req, res) => {
   try {
-    const groups = await Group.find({ members: req.user._id });
+    // Members and admins are populated here, not just in getGroupByID: the
+    // client used to load the list and then immediately fetch the first group
+    // just to resolve these names, which made opening the screen two
+    // round-trips deep. Populated once, the list already answers both.
+    const groups = await Group.find({ members: req.user._id })
+      .populate("members", "username")
+      .populate("admins", "username");
 
     if (!groups) {
       return res.status(404).json({ message: "no group found" });
@@ -207,10 +213,7 @@ export const getMyInvite = async (req, res) => {
     status: "pending",
   }).populate("group invitedBy", "name username");
 
-  if (invites.length === 0){
-    return res.status(404).json({ message: "no invitation found" });
-  }
-
+  // Having no pending invites is a valid state, not a 404.
   res.status(200).json(invites);
 };
 
@@ -278,12 +281,11 @@ export const leaveGroup = async (req, res) => {
     if (!group.members.includes(req.user._id))
       return res.status(403).json({ message: "You're not in this group" });
 
-    group.members = group.members.filter(
-      (id) => id.toString() !== req.params.userId
-    );
-    group.admins = group.admins.filter(
-      (id) => id.toString() !== req.params.userId
-    ); // in case they're admin
+    // This route has no :userId param — the leaver is the caller.
+    const leaverId = req.user._id.toString();
+
+    group.members = group.members.filter((id) => id.toString() !== leaverId);
+    group.admins = group.admins.filter((id) => id.toString() !== leaverId); // in case they're admin
     await group.save();
 
     res.status(200).json({ message: "You left the group" });
@@ -295,37 +297,73 @@ export const leaveGroup = async (req, res) => {
 
 //handle admin
 export const promoteToAdmin = async (req, res) => {
-  const group = await Group.findById(req.params.id);
-  if (!group.admins.includes(req.user._id)) return res.status(403).json({ message: "Only admins can promote" });
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
 
-  if (!group.admins.includes(req.params.userId)) {
+    if (!group.admins.includes(req.user._id))
+      return res.status(403).json({ message: "Only admins can promote" });
 
-      //for recent acctivity endpoint
+    if (!group.members.some((id) => id.toString() === req.params.userId))
+      return res.status(400).json({ message: "That user is not a member" });
+
+    if (!group.admins.includes(req.params.userId)) {
+      // The activity belongs to the person being promoted, not to the group.
       await logActivity({
-        user: req.params.id,
+        user: req.params.userId,
         type: "group",
         action: "Promoted to be admin",
         title: group.name,
         targetId: group._id,
       });
 
-    await Group.findByIdAndUpdate(
+      await Group.findByIdAndUpdate(
         req.params.id,
-        { $addToSet: { admins: req.params.userId} },
+        { $addToSet: { admins: req.params.userId } },
         { new: true }
       );
-  }
+    }
 
-  res.status(200).json({ message: "User promoted to admin" });
+    res.status(200).json({ message: "User promoted to admin" });
+  } catch (err) {
+    res.status(500).json({ message: "Error promoting member" });
+  }
 };
 
 export const demoteAdmin = async (req, res) => {
-  const group = await Group.findById(req.params.id);
-  if (!group.admins.includes(req.user._id)) return res.status(403).json({ message: "Only admins can demote" });
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
 
-  group.admins = group.admins.filter(id => id.toString() !== req.params.userId);
-  await group.save();
+    if (!group.admins.includes(req.user._id))
+      return res.status(403).json({ message: "Only admins can demote" });
 
-  res.status(200).json({ message: "User demoted from admin" });
+    if (!group.admins.some((id) => id.toString() === req.params.userId))
+      return res.status(400).json({ message: "That user is not an admin" });
+
+    // A group with no admins can never be administered again — the last one
+    // has to promote a replacement before stepping down.
+    if (group.admins.length <= 1)
+      return res
+        .status(400)
+        .json({ message: "Promote another admin before demoting the last one" });
+
+    group.admins = group.admins.filter(
+      (id) => id.toString() !== req.params.userId
+    );
+    await group.save();
+
+    await logActivity({
+      user: req.params.userId,
+      type: "group",
+      action: "Removed as admin",
+      title: group.name,
+      targetId: group._id,
+    });
+
+    res.status(200).json({ message: "User demoted from admin" });
+  } catch (err) {
+    res.status(500).json({ message: "Error demoting member" });
+  }
 };
 
